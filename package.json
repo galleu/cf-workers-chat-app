@@ -1,0 +1,20 @@
+{
+  "name": "divelog",
+  "version": "1.0.0",
+  "description": "Keep track and log all your dives, and share them if you want.",
+  "main": "index.js",
+  "scripts": {
+    "test": "wrangler dev",
+    "start": "wrangler publish"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/galleu/divelog.git"
+  },
+  "author": "Galleu",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/galleu/divelog/issues"
+  },
+  "homepage": "https://github.com/galleu/divelog#readme"
+}
