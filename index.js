@@ -31,27 +31,16 @@ const Router = ({ base = '', routes = [] } = {}) => ({
 const router = Router();
 
 const static = {
-    style: `<style>
-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif; background-color: #17191a; }
-#box { margin-top: 80px; margin-left: 10%; }
-h1 { font-weight: normal; font-size: 48px; line-height: 150%; color: #a1a1a1; }
-p { position: absolute; font-size: 24px; line-height: 150%; color: #f1f1f1; }
-input { background: none; border: 1px solid #fff; border-radius: 0px; padding: 5px; color: #fff; width: 200px; }
-button { background: none; color: #fff; padding: 3px 10px; border: 1px solid #fff; cursor: pointer; }
-button:hover { opacity: 80%; }
-</style>`,
     e400: (status, name) =>  new Response(`<!DOCTYPE html>
 <head>
     <meta charSet="utf-8" />
     <title>${status} ${name}</title>
-    <link rel="icon" href="https://cdn.arcsky.net/v1.ico" />
-${static.style}
 </head>
 <body>
-    <div id="box">
+    <center>
         <h1>${status} ${name}</h1>
-        <p>ArcSky/${Version}</p>
-    </div>
+        <hr />
+    </center>
 </body>
 </html>`, { status: status, headers: { "Content-Type": "text/html" }})
 }
@@ -485,8 +474,6 @@ router.post("/api/dive", async request => {
 })
 
 
-
-
 router.get("/logout", async request => {
     const session_id = getSessionToken(request);
     if (session_id) {
@@ -501,11 +488,6 @@ router.get("/logout", async request => {
     } else return res;
 })
 
-
-
-router.get("/favicon.ico", () => {
-    return Response.redirect("https://cdn.arcsky.net/v1.ico", 301)
-})
 
 router.all("*", () => defaults.e404())
 
