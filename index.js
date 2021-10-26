@@ -249,42 +249,11 @@ const EXAMPLE_diveLog = {
 
 
 
-// Dive Page
-router.get("/user/:user_id/:dive_index", async  request => {
-    // Make sute the dive_index is a number
-    if (!isNaN(request.params.dive_index) && isFinite(request.params.dive_index)) return new Response("Invalid dive number")
-    
-    const [session, owner] = await Promise.all([checkSession(request), KV.get("users:"+request.params.user_id, {type: 'json'})]);
-    if (!owner) {
-        return new Response("User not found", {status: 404, headers: { "Content-Type": "text/html" }});
-    };
-
-    // Check visibility settings, and don't return the page if the user does not allow it to be public.
-    let canAccess = false;
-    if (session.username === owner.username) canAccess = true;
-    else if (owner.visibility > 1) canAccess = true;
-    // If its public or the owner/author is accessing it then allow it.
-    if (canAccess) {
-        const [dives, html] = await Promise.all([KV.get("users:"+session.username+":dives", { type:"json" }), KV.get("app:html:dive")]);
-        // Make sure the dive exists
-        const dive = dives[request.params.dive_index];
-        if (dive) {
-            return new Response(html.replace("__DATA__", JSON.stringify({dive})), { headers: { "Content-Type": "text/html" } })
-        } else {
-            return new Response("404 - Dive Not Found", { status: 404, headers: { "Content-Type": "text/html" } })
-        }
-    } else {
-        return new Response("403 - This user has a private profile", { status: 403, headers: { "Content-Type": "text/html" } })
-    }
-})
-
-
-
 
 
 
 // Location for login and signup
-// THIS LOCATION IS RATE LIMITED by my lord and savior, Cloudflare :)
+// THIS LOCATION SHOULD BE RATE LIMITED by my lord and savior, Cloudflare :P
 router.post("/api/auth", async (request) => {
     // Check if the request body is valid JSON
     let body;
@@ -471,7 +440,49 @@ router.post("/api/dive", async request => {
     } catch (err) {
         return defaults.apiError("Error trying to save dives to account", 500);
     }
+});
+
+
+// API for returning 20 dives from the user
+router.get("/api/:user_id/:index", async  request => {
+    // Make sure the dive_index is a number
+    if (isNaN(request.params.index) || isFinite(request.params.index)) return new Response("Invalid dive number")
+    
+    const [session, owner] = await Promise.all([checkSession(request), KV.get("users:"+request.params.user_id, {type: 'json'})]);
+    if (!owner) {
+        return new Response("User not found", {status: 404, headers: { "Content-Type": "text/html" }});
+    };
+
+    // Check visibility settings, and don't return the page if the user does not allow it to be public.
+    let canAccess = false;
+    if (session.username === owner.username) canAccess = true;
+    else if (owner.visibility > 1) canAccess = true;
+    // If its public or the owner/author is accessing it then allow it.
+    if (canAccess) {
+        const [dives, html] = await Promise.all([KV.get("users:"+session.username+":dives", { type:"json" }), KV.get("app:html:dive")]);
+        // Get the first 20 dives from the dives array
+        const dive_index = parseInt(request.params.index);
+        const dive_count = dives.length;
+        const dive_start = dive_index * 20;
+        const dive_end = dive_start + 20;
+        const dive_slice = dives.slice(dive_start, dive_end);
+
+        // Make sure there are dives to return
+        if (dive_slice.length > 0) {
+            // return a JSON array of the 20 dives
+            return new Response(JSON.stringify(dive_slice), {status: 200, headers: { "Content-Type": "application/json" }});
+        } else {
+            // If there are no dives to return, return a 404
+            return new Response("{404 - Dives Not Found}", { status: 404, headers: { "Content-Type": "text/html" } })
+        }
+    } else {
+        return new Response("403 - This user has a private profile", { status: 403, headers: { "Content-Type": "text/html" } })
+    }
 })
+
+
+
+
 
 
 router.get("/logout", async request => {

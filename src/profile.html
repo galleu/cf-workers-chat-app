@@ -31,15 +31,14 @@
         }
     </style>
 </head>
-
 <body>
     <div id="app">
-        <div>
+        <div style="text-align: center;">
             <h1>__NAME__</h1>
             <img v-id="account.pfp" src="__PFP__" alt="__NAME__'s Profile Picture">
             <p>__BIO__</p>
         </div>
-        <div>
+        <div style="text-align: center;">
             <span>Total Dives: {{ account.stats.dives }}</span>
             <span>Top Locals: {{ account.stats.locations }}</span>
             <span>Max Depth: {{ account.stats.depthMax }}</span>
@@ -71,29 +70,56 @@
                         <input type="time" name="time_end" placeholder="Dive End Time">
                     </div>
                     <div>
+                        <label for="depth_max">Dive Max Depth</label>
                         <input type="text" name="depth_max" placeholder="Dive Max Depth"><span v-text="depthUnit"></span>
+                        <label for="depth_avg">Dive Average Depth</label>
                         <input type="text" name="depth_avg" placeholder="Dive Average Depth"><span v-text="depthUnit"></span>
+                        <label for="deco_time">Deco Duration</label>
                         <input type="text" name="deco_time" placeholder="Deco Duration"><span>min</span>
+                        <label for="deco_depth">Deco Depth</label>
                         <input type="text" name="deco_depth" placeholder="Deco Depth"><span v-text="depthUnit"></span>
                     </div>
                     <div>
+                        <label for="o2_start">O2 Start</label>
                         <input type="number" name="o2_start" placeholder="O2 Start"><span v-text="pressureUnit"></span>
+                        <label for="o2_end">O2 End</label>
                         <input type="number" name="o2_end" placeholder="O2 End"><span v-text="pressureUnit"></span>
                         <input type="text" name="o2_mixture" placeholder="O2 Mixture" value="21%">
                     </div>
                     <div>
-                        <input type="text" name="temp_min" placeholder="temperature Min"><span v-text="tempUnit"></span>
-                        <input type="text" name="temp_max" placeholder="temperature Max"><span v-text="tempUnit"></span>
+                        <input type="number" name="temp_min" placeholder="temperature Min"><span v-text="tempUnit"></span>
+                        <input type="number" name="temp_max" placeholder="temperature Max"><span v-text="tempUnit"></span>
                     </div>
                     <div>
-                        <input type="text" name="dive_notes" placeholder="Dive Notes">
                         <input type="text" name="equipment" placeholder="Equipment">
                         <input type="text" name="Buddies" placeholder="Buddies (name, name)">
                         <input type="text" name="visibility" placeholder="Dive Visibility">
-                        <input type="text" name="notes" placeholder="Dive Notes"> 
+                    </div>
+                    <div>
+                        <label for="dive_notes">Dive Notes</label>
+                        <textarea name="dive_notes" id="" cols="30" rows="10"></textarea>
                     </div>
                     <input type="submit" value="Add Dive">
                 </form>
+            </div>
+        </div>
+        <div>
+            <h3>Dive Log</h3>
+            <div v-for="dive in account.dives">
+                <div>
+                    <h4>{{ dive.number }} - {{ dive.name }}</h4>
+                    <p>{{ dive.location }}</p>
+                    <p>{{ dive.date }}</p>
+                    <p>{{ dive.time_start }} to {{ dive.time_end }}, Duration {{ dive.time_start-dive.time_end }}</p>
+                    <p>Depth Max: {{ dive.depth_max }}, Avg: {{ dive.depth_avg }} <span v-text="depthUnit"></span></p>
+                    <p>Deco: {{ dive.deco_time }} @ {{ dive.deco_depth }} <span v-text="depthUnit"></span></p>
+                    <p>O2: {{ dive.o2_start }} - {{ dive.o2_end }} <span v-text="pressureUnit"></span></p>
+                    <p>{{ dive.temp_min }} - {{ dive.temp_max }}</p><span v-text="tempUnit"></span>
+                    <p>Equipment: {{ dive.equipment }}</p>
+                    <p>Buddies: {{ dive.buddies }}</p>
+                    <p>Visibility: {{ dive.visibility }} <span v-text="depthUnit"></span></p>
+                    <p>Notes: {{ dive.dive_notes }}</p>
+                </div>
             </div>
         </div>
     </div>
@@ -108,6 +134,17 @@
                         type: "POST",
                         url: "/api/dive",
                         data: formData,
+                        success: function(res){
+                            console.log(res);
+                        },
+                        dataType: "json",
+                        contentType : "application/json"
+                    });
+                },
+                getLogPage: function (index) {
+                    $.ajax({
+                        type: "GET",
+                        url: "/api/dives/__USERNAME__/" + index,
                         success: function(res){
                             console.log(res);
                         },
