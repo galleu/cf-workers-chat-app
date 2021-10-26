@@ -105,22 +105,28 @@
         </div>
         <div>
             <h3>Dive Log</h3>
-            <div v-for="dive in account.dives">
-                <div>
-                    <h4>{{ dive.number }} - {{ dive.name }}</h4>
-                    <p>{{ dive.location }}</p>
-                    <p>{{ dive.date }}</p>
-                    <p>{{ dive.time_start }} to {{ dive.time_end }}, Duration {{ dive.time_start-dive.time_end }}</p>
-                    <p>Depth Max: {{ dive.depth_max }}, Avg: {{ dive.depth_avg }} <span v-text="depthUnit"></span></p>
-                    <p>Deco: {{ dive.deco_time }} @ {{ dive.deco_depth }} <span v-text="depthUnit"></span></p>
-                    <p>O2: {{ dive.o2_start }} - {{ dive.o2_end }} <span v-text="pressureUnit"></span></p>
-                    <p>{{ dive.temp_min }} - {{ dive.temp_max }}</p><span v-text="tempUnit"></span>
-                    <p>Equipment: {{ dive.equipment }}</p>
-                    <p>Buddies: {{ dive.buddies }}</p>
-                    <p>Visibility: {{ dive.visibility }} <span v-text="depthUnit"></span></p>
-                    <p>Notes: {{ dive.dive_notes }}</p>
+            <div v-if="dives" v-for="(page, index) in dives">
+                <div v-if="index == dive_page" v-for="dive in page">
+                    <div>
+                        <h4>{{ dive.name }}</h4>
+                        <p>{{ dive.location }}</p>
+                        <p>{{ dive.date }}</p>
+                        <p>{{ dive.time_start }} - {{ dive.time_end }}</p>
+                        <p>{{ dive.depth_max }} - {{ dive.depth_avg }}</p>
+                        <p>{{ dive.deco_time }}</p>
+                        <p>{{ dive.deco_depth }}</p>
+                        <p>{{ dive.o2_start }} - {{ dive.o2_end }}</p>
+                        <p>{{ dive.temp_min }} - {{ dive.temp_max }}</p>
+                        <p>{{ dive.equipment }}</p>
+                        <p>{{ dive.Buddies }}</p>
+                        <p>{{ dive.visibility }}</p>
+                        <p>{{ dive.dive_notes }}</p>
+                    </div>
                 </div>
             </div>
+            <span>Page: {{dive_page}}/{{Math.round(total_dives / 20)}}</span>
+            <button v-if="dives" @click="dive_page = dive_page - 1" :disabled="dive_page==0">Previous</button>
+            <button v-if="dives" @click="nextPage" :disabled="!next_page">Next</button>
         </div>
     </div>
     <script>
@@ -141,17 +147,32 @@
                         contentType : "application/json"
                     });
                 },
-                getLogPage: function (index) {
+                getLogPage: function (index, goNext) {
                     $.ajax({
                         type: "GET",
                         url: "/api/dives/__USERNAME__/" + index,
                         success: function(res){
-                            console.log(res);
+                            app.dives.push(res.dives);
+                            app.next_page = res.next_page;
+                            app.next_index = index++;
+                            if (goNext) { app.dive_page++; }
                         },
                         dataType: "json",
                         contentType : "application/json"
                     });
+                },
+                nextPage: function () {
+                    app.getLogPage(app.next_index + 1, true);
                 }
+            },
+            created: function() {
+                this.next_page = false;
+                this.next_index = 0;
+                this.dive_page = 0;
+                this.getLogPage(0, false);
+            },
+            mounted: function () {
+                console.log("Mounted")
             }
         })
 

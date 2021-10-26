@@ -76,7 +76,7 @@ router.get("/user/:id", async request => {
     // Hide profile if owner's visibility is set to private, or is not the owner 
     if (owner.public || isOwner) {
         try {
-            let [html, dives] = await Promise.all([KV.get("app:html:profile"), KV.get("users:"+owner.username+"dives", {type: 'json'})])
+            let [html, dives] = await Promise.all([KV.get("app:html:profile"), KV.get("users:"+owner.username+":dives", {type: 'json'})])
             if (!dives) dives = [];
             
             let displayed = {
@@ -104,36 +104,37 @@ router.get("/user/:id", async request => {
             let avgTemp = 0;
 
 
-            // Calculate the average bewtween a min a max
-            function avg(min, max) {
-                return (min + max) / 2;
-            }
-
             // Find the average air usage from all the dives            
             let avgAirUsage = 0;
 
             // Number of dives
             let diveCount = 0;
-            dives.forEach(dive => {
-                diveCount++;
-                // Find the max time from all the dives
-                if (dive.depth > maxDepth) maxDepth = dive.depth;
+            
+            try {
+                dives.forEach(dive => {
+                    diveCount++;
+                    // Find the max time from all the dives
+                    if (dive.depth > maxDepth) maxDepth = dive.depth;
+    
+                    // Find the max time from all the dives
+                    if (dive.time > maxTime) maxTime = dive.time;
+    
+                    // Find the average depth of all the dives
+                    avgDepth += dive.depth.avg;
+    
+                    // Find the average time of all the dives
+                    avgTime += dive.time;
+    
+                    // Find the average temperature of all the dives
+                    avgTemp += dive.temperature.avg;
+    
+                    // Find the average air usage of all the dives
+                    avgAirUsage += dive.o2.start - dive.o2.end;
+                });
+            } catch (err) {
+                console.log(err);
+            }
 
-                // Find the max time from all the dives
-                if (dive.time > maxTime) maxTime = dive.time;
-
-                // Find the average depth of all the dives
-                avgDepth += dive.depth.avg;
-
-                // Find the average time of all the dives
-                avgTime += dive.time;
-
-                // Find the average temperature of all the dives
-                avgTemp += dive.temperature.avg;
-
-                // Find the average air usage of all the dives
-                avgAirUsage += dive.o2.start - dive.o2.end;
-            });
             avgDepth = avgDepth / diveCount;
             avgTime = avgTime / diveCount;
             avgTemp = avgTemp / diveCount;
@@ -176,6 +177,8 @@ router.get("/user/:id", async request => {
                 depthUnit: account.metric ? 'm' : 'ft',
                 tempUnit: account.metric ? 'C' : 'F',
                 pressureUnit: account.metric ? 'bar' : 'psi',
+                dives: [],
+                total_dives: dives.length,
             };
             return new Response(html
                 .replaceAll("__NAME__", account.name)
