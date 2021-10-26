@@ -80,16 +80,9 @@ router.get("/user/:id", async request => {
             if (!dives) dives = [];
 
             let displayed = {
-                favorite: [],
                 most_recent: [],
             };
-            if (owner.favorite_dives) {
-                owner.favorite_dives.forEach(index => {
-                    if (dives[index]) {
-                        displayed.favorite.push(dives[index]);
-                    };
-                });
-            };
+
 
             dives.slice(-10).forEach(dive => {
                 if (dive.hidden || !isOwner) return;
@@ -97,48 +90,37 @@ router.get("/user/:id", async request => {
             });
 
             // Find the max depth from all the dives
-            let maxDepth = 0;
-            let maxTime = 0;
-            let avgDepth = 0;
-            let avgTime = 0;
-            let avgTemp = 0;
-
+            let depth_max = 0;
+            let depth_avg = 0;
+            let temp_avg = 0;
 
             // Find the average air usage from all the dives            
-            let avgAirUsage = 0;
+            let avg_air_usage = 0;
 
             // Number of dives
-            let diveCount = 0;
+            const dive_count = dives.length;
 
             try {
                 dives.forEach(dive => {
-                    diveCount++;
                     // Find the max time from all the dives
-                    if (dive.depth > maxDepth) maxDepth = dive.depth;
-
-                    // Find the max time from all the dives
-                    if (dive.time > maxTime) maxTime = dive.time;
+                    if (dive.depth_max > depth_max) depth_max = dive.depth_max;
 
                     // Find the average depth of all the dives
-                    avgDepth += dive.depth.avg;
-
-                    // Find the average time of all the dives
-                    avgTime += dive.time;
+                    depth_avg += dive.depth_avg;
 
                     // Find the average temperature of all the dives
-                    avgTemp += dive.temperature.avg;
+                    temp_avg += dive.temperature.avg;
 
                     // Find the average air usage of all the dives
-                    avgAirUsage += dive.o2.start - dive.o2.end;
+                    avg_air_usage += dive.o2_start - dive.o2_end;
                 });
             } catch (err) {
                 console.log(err);
             }
 
-            avgDepth = avgDepth / diveCount;
-            avgTime = avgTime / diveCount;
-            avgTemp = avgTemp / diveCount;
-            avgAirUsage = avgAirUsage / diveCount;
+            depth_avg = (depth_avg / dive_count) * 100;
+            temp_avg = temp_avg / dive_count;
+            avg_air_usage = avg_air_usage / dive_count;
 
             // Find the five most common locations for all the dives
             let locations = {};
@@ -148,11 +130,11 @@ router.get("/user/:id", async request => {
                     locations[dive.location]++;
                 }
             });
-            let topLocations = Object.keys(locations).sort((a, b) => locations[b] - locations[a]).slice(0, 5);
-
+            let top_locations = Object.keys(locations).sort((a, b) => locations[b] - locations[a]).slice(0, 3);
 
             const account = {
                 username: owner.username,
+                display_name: owner.display_name || owner.username,   
                 name: owner.display_name,
                 pfp: owner.pfp,
                 public: owner.public,
@@ -160,15 +142,12 @@ router.get("/user/:id", async request => {
                 bio: owner.bio,
                 self: isOwner,
                 stats: {
-                    diveCount,
-                    favorite_dives: displayed.favorite.length,
-                    maxDepth,
-                    maxTime,
-                    avgDepth,
-                    avgTime,
-                    avgTemp,
-                    avgAirUsage,
-                    topLocations
+                    dive_count,
+                    depth_max,
+                    depth_avg,
+                    temp_avg,
+                    avg_air_usage,
+                    top_locations
                 }
             };
             const data = {
@@ -181,11 +160,9 @@ router.get("/user/:id", async request => {
                 total_dives: dives.length,
             };
             return new Response(html
-                .replaceAll("__NAME__", account.name)
-                .replace("__BIO__", account.bio)
-                .replaceAll("__PFP__", account.pfp)
+                .replaceAll("__NAME__", account.display_name || account.name)
                 .replaceAll("__USERNAME__", account.username)
-                .replaceAll("__NUM_DIVES__", diveCount)
+                .replaceAll("__NUM_DIVES__", dive_count)
                 .replace("__DATA__", JSON.stringify(data)), { headers: { "Content-Type": "text/html" } });
         } catch (err) {
             await logError(err, request);
@@ -202,56 +179,9 @@ const EXAMPLE_account = {
     pfp: "",
     public: false,
     metric: false,
-    favorite_dives: [],
     num_dives: 0,
     bio: "",
 };
-
-// Dive log object example
-const EXAMPLE_diveLog = {
-    time: {
-        start: "",
-        end: "",
-        duration: 0,
-    },
-    depth: {
-        max: 0,
-        avg: 0
-    },
-    o2: {
-        start: "",
-        end: "",
-        mixture: "",
-    },
-    location: "",
-    notes: "",
-    temperature: {
-        min: 0,
-        max: 0,
-        avg: 0
-    },
-    weight: "",
-    deco: {
-        depth: "",
-        time: ""
-    },
-    dive_type: ["Wreck", "Reef", "Cave", "Search & Recovery", "Deep Dive", "Night Dive", "Altitude Dive", "Ice Dive"],
-    equipment: "",
-    buddies: [],
-    environment: {
-        sky: ["Sunny", "Cloudy", "Dark", "Raining", "Snowing", "Storming", "Foggy", "Overcast", "Clear", "Stormy", "Foggy", "Overcast", "Clear"],
-        water: ["Clear", "Salty", "Fresh", "Salty", "Fresh"],
-        visibility: 0
-    },
-    photos: [],
-    videos: [],
-    tags: [],
-    rating: 0,
-    clothes: ""
-}
-
-
-
 
 
 
@@ -326,8 +256,8 @@ router.post("/api/auth", async (request) => {
                 body: `secret=${CAPTCHA_SECRET}&response=${body.captcha}`
             });
             verify = await verify.json();
+            // If captcha is valid
             if (verify.success) {
-                // If captcha is valid
                 // Make sure the username is not taken
                 let user = await KV.get("users:" + body.username, { type: 'json' });
                 if (user) {
@@ -340,7 +270,6 @@ router.post("/api/auth", async (request) => {
                         pfp: null,
                         metric: true,
                         public: false,
-                        favorite_dives: [],
                         bio: "",
                         disabled: false
                     };
@@ -370,37 +299,31 @@ router.patch("/api/account", async request => {
         if (!account) return defaults.apiError("401 Unauthorized", 401)
         if (account.disabled) return defaults.apiError("403 This account has been disabled", 403)
 
-        const type = request.headers.get("update-type");
-        if (type === "pfp") {
-            account.pfp = "";//
-            session.pfp = "";//
-            try {
-                const session_id = getSessionToken(request);
-                await Promise.all([
-                    KV.put('users:' + session.username, JSON.stringify(account)),
-                    KV.put(`sessions:${session_id}`, JSON.stringify(session))
-                ]);
-                return new Response(contentHash)
-            } catch (err) {
-                return defaults.apiError("Error trying to save updates to account", 500);
-            }
-        } else if (type === "settings") {
-            const settings = await request.json();
-            if (settings.metric) account.metric = true;
-            if (settings.public) account.public = settings.public;
-            try {
-                const session_id = getSessionToken(request);
-                await Promise.all([
-                    KV.put('users:' + session.username, JSON.stringify(account)),
-                    KV.put(`sessions:${session_id}`, JSON.stringify(session))
-                ]);
-                return new Response(contentHash)
-            } catch (err) {
-                return defaults.apiError("Error trying to save updates to account", 500);
-            }
+        let body = await request.json();
+        if (!body) return defaults.e400();
+
+        if (body.display_name.length == 0) body.display_name = account.display_name || account.username;
+        if (body.bio.length == 0) body.bio = "";
+        if (body.display_name.length > 26) return defaults.apiError("Display name too long", 400);
+        if (body.bio.length > 256) return defaults.apiError("Bio too long", 400);
+        
+        if (["Private", "Public"].includes(body.privacy)) {
+            account.public = body.privacy === "Public";
         } else {
-            return defaults.apiError("Invalid 'update-type' in Header", 400);
+            return defaults.apiError("Privacy invalid", 400)
+        };
+
+        if (["Metric", "Imperial"].includes(body.unit)) {
+            account.metric = body.unit === "Metric";
+        } else {
+            return defaults.apiError("Unit invalid", 400)
         }
+        account.display_name = body.display_name;
+        account.bio = body.bio;
+
+        // Save the account to KV
+        await KV.put('users:' + session.username, JSON.stringify(account), { metadata: { username: account.username, updated: +Date.now() } });
+        return new Response("OK", { status: 200 });
     } else {
         return defaults.apiError("401 Unauthorized", 401)
     }
@@ -486,8 +409,8 @@ router.post("/api/dive", async request => {
     // Make there there are not more then 15000 dives logged
     if (dives.length > 15000) return defaults.apiError("Too many dives, Sorry", 400);
 
-    // sort dives by number id descending
-    dives.sort((a, b) => { return b.id - a.id; });
+    // Sort dives by number id descending
+    dives.sort((a, b) => { return a.id - b.id; });
 
     // Save the dives array to the KV store
     try {
@@ -546,15 +469,18 @@ router.get("/api/dives/:user_id/:index", async request => {
 
 router.get("/logout", async request => {
     const session_id = getSessionToken(request);
-    if (session_id) {
-        await KV.delete(`sessions:${session_id}`);
-    };
     let res = new Response(null, { status: 302 });
     res.headers.set('Set-Cookie', `session=null;Domain=.arcsky.net; Secure; HttpOnly; Max-Age=0`);
-    res.headers.set('location', "https://arcsky.net/")
-    if (sid) {
-        await KV.delete('session:' + sid);
-        return res;
+    const { hostname } = new URL(request.url);
+    res.headers.set('location', `https://${hostname}/`)
+    if (session_id) {
+        try {
+            await KV.delete('sessions:' + session_id);
+        } catch (err) {
+            // Do nothing with the error
+        } finally { 
+            return res;
+        }
     } else return res;
 })
 

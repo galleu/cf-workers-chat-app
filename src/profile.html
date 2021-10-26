@@ -37,8 +37,10 @@
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
-            backdrop-filter: blur(7px);
             background-color: rgb(37, 150, 190);
+            backdrop-filter: blur(7px);
+            -mox-backdrop-filter: blur(7px);
+            -webkit-backdrop-filter: blur(7px);
         }
 
         @import url('https://fonts.googleapis.com/css2?family=Roboto&display=swap');
@@ -80,7 +82,7 @@
             background-color: white;
             border: solid 1px #E0E0E0;
             font-size: 15px;
-            color: #757575;
+            color: #272727;
             -moz-border-radius: 0px;
             -webkit-border-radius: 0px;
             border-radius: 0px;
@@ -137,11 +139,6 @@
             padding-top: 10px;
             padding-bottom: 0px;
             text-align: center;
-        }
-
-        .checkbox input {
-            opacity: 0;
-            position: absolute;
         }
 
         .checkbox input, .checkbox label {
@@ -223,16 +220,38 @@
             border-radius: 50%;
         }
 
-        .radio input:checked+label:before {
-            content: "\25CF";
-            background: #2ca4bf;
-            color: white;
-            border-color: #2ca4bf;
-        }
+        .radio input:checked+label:before { content: "\25CF"; background: #2ca4bf; color: white; border-color: #2ca4bf; }
 
-        #app {
-            max-height: 100vh;
-            overflow-y: scroll;
+        #app { max-height: 100vh; overflow-y: scroll; }
+
+        div.divelog { padding: 10px; }
+        .divelog div { display: flex; }
+        .divelog div p { margin: 5px; }
+        .divelog div p:first-child { margin-left: 0; }
+        h2 { margin: 0; }
+        
+        button { border: 0; background: #fff; color: #0c0c0c; padding: 4px 10px; }
+        button:hover { opacity: 85%;}
+        button:disabled { opacity: 50%; }
+        select { padding: 5px }
+        footer {
+            position: fixed;
+            margin: 0;
+            padding: 10px 16px;
+            display: flex;
+            justify-content: space-between;
+            bottom: 0;
+            width: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: #fff;
+        }
+        footer a, footer p  {
+            margin: 0;
+            padding: 0;
+            font-size: 0.8em;
+        }
+        footer a {
+            font-size: 1em;
         }
     </style>
     <script>
@@ -241,47 +260,112 @@
 </head>
 <body>
     <div id="app">
+        <a v-if="account.self" href="/logout" style="color: #fff; position: fixed; top: 10px; left: 10px;">Logout</a>
         <div style="text-align: center;">
-            <h1>__NAME__</h1>
-            <img src="__PFP__" alt="__NAME__'s Profile Picture">
-            <p>__BIO__</p>
+            <h1>{{account.display_name}}</h1>
+            <p>{{account.bio}}</p>
         </div>
         <div style="text-align: center;">
-            <span>Total Dives: {{ account.stats.dives }}</span>
-            <span>Top Locals: {{ account.stats.locations }}</span>
-            <span>Max Depth: {{ account.stats.depthMax }}</span>
-            <span>Average Depth: {{ account.stats.depthAvg }}</span>
-        </div>
-        <div>
-            <div>
-                <h3>Top/Fav Dives</h3>
-            </div>
-            <div>
-                <h3>Newest Dives</h3>
-            </div>
-        </div>
-        <div>
-            <h3>Dive Log</h3>
-            <div v-if="dives">
-                <div v-for="dive in dives[active_index]">
-                    {{dive}}
-                </div>
-                <span>{{active_index + 1}}/{{Math.round(total_dives/20)}}</span>
-                <button @click="getPrevPage" :disabled="active_index==0 || loading">Previous</button>
-                <button @click="getNextPage" :disabled="!next_page || loading">Next</button>
-            </div>
-            <div v-else>
-                <p v-if="account.self">You don't have any logged dives, add some?</p>
-                <p v-else>This user doesn't have any logged dives.</p>
+            <div style="display: block;">
+                <span v-if="account.stats.dive_count">Total Dives: {{ account.stats.dive_count }}</span><br />
+                <span v-if="account.stats.top_locations">Top Locations: {{ account.stats.top_locations.join(', ') }}</span><br />
+                <span v-if="account.stats.depth_max">Max Depth: {{ account.stats.depth_max }}{{depthUnit}}</span><br />
+                <span v-if="account.stats.depth_avg">Average Depth: {{ account.stats.depth_avg }}{{depthUnit}}</span>
             </div>
             <div v-if="account.self">
-                <button>Add New Dive</button>
+                <button @click="toggleEdit">Edit Account</button>
+                <form id="accountEditForm" v-if="account.edit" @submit.prevent="submitAccountEdit" style="margin: 0 auto; text-align: left;">
+                    <div>
+                        <label for="display_name">New Display Name</label>
+                        <input type="text" name="display_name" maxlength="26" placeholder="New Display Name">
+                        <label for="bio">New Bio</label>
+                        <input type="text" name="bio" maxlength="256" placeholder="New Bio">
+                    </div>
+                    <div>
+                        <div class="left">
+                            <div>
+                                <label for="privacy">Account Visibility</label>
+                                <select name="privacy">
+                                    <option>Private</option>
+                                    <option>Public</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="unit">Unit</label>
+                                <select name="unit">
+                                    <option>Metric</option>
+                                    <option>Imperial</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="padding-top: 10px">
+                            <button :disabled="loading">Save</button>
+                        </div>
+                    </div>
+                </form>
+                <div style="display: none;">
+                    <!-- This was going to be something, but I'm waiting on more options with Cloudflare images -->
+                    <label for="bg-upload">Change background</label><br >
+                    <input type="file" id="bg-upload" accept="image/*"><br />
+                    <button style="margin-top: 10px;">Upload</button><br />
+                    <button style="margin-top: 10px;">Default</button>
+                </div>
+            </div>
+        </div>
+        <div>
+            <div v-if="dives.length">
+                <hr style="color:#fff;">
+                <div v-for="dive in dives[active_index]" style="text-align: center; margin: 0 auto; display: block; max-width: 460px;">
+                    <div class="divelog" style="text-align: left;">
+                        <h2 style="text-align: center;">Dive # {{dive.id}}</h2>
+                        <div>
+                            <p>Name: {{dive.name}}</p>
+                            <p>Location: {{dive.location}}</p>
+                        </div>
+                        <div>
+                            <p>Time: Start {{dive.time_start}}, End {{dive.time_end}}</p>
+                            <p>Date: {{dive.date}}</p>
+                        </div>
+                        <div>
+                            <p>Depth: Max {{dive.depth_max}}{{depthUnit}}, Avg {{dive.depth_avg}}{{depthUnit}}</p>
+                            <p>Deco: Time {{dive.deco_time}}min, Depth: {{dive.deco_depth}}{{depthUnit}}</p>
+                        </div>
+                        <div>
+                            <p>O2 Start: {{dive.o2_start}}{{pressureUnit}}, End: {{dive.o2_end}}{{pressureUnit}}</p>
+                            <p>O2 Mixture: {{dive.o2_mixture}}</p>
+                        </div>
+                        <div>
+                            <p>Temperature: Avg {{dive.temp_min}}&#176;{{tempUnit}}, Min {{dive.temp_min}}&#176;{{tempUnit}}, Max {{dive.temp_max}}&#176;{{tempUnit}}</p>
+                            <p>Visibility: {{dive.visibility}}{{depthUnit}}</p>
+                        </div>
+                        <div>
+                            <p>Equipment: {{dive.equipment}}</p>
+                            <p>Buddies: {{dive.buddies}}</p>
+                        </div>
+                        <div>
+                            <p>Notes: {{dive.notes}}</p>
+                        </div>
+                    </div>
+                </div>
+                <div style="text-align: center;">
+                    <span>{{active_index + 1}}/{{Math.ceil(total_dives/20)}}</span><br />
+                    <button @click="getPrevPage" class="btn" :disabled="active_index==0 || loading">Previous</button>
+                    <button @click="getNextPage" class="btn" :disabled="active_index+1 == Math.ceil(total_dives / 20) || loading">Next</button>
+                </div>
+            </div>
+            <div v-else style="text-align: center;">
+                <p v-if="account.self">You don't have any logged dives, add some?</p>
+                <p v-else>{{account.display_name}} doesn't have any logged dives.</p>
+            </div>
+            <div v-if="account.self">
                 <form id="newDiveForm" @submit.prevent="submitDiveLog">
                     <div>
                         <div class="left">
                             <div>
                                 <label for="number">Dive #</label>
-                            <input type="number" name="number" placeholder="Dive Number" :value="account.stats.diveCount+1" min="1" max="15000">
+                            <input type="number" name="number" placeholder="Dive Number" :value="total_dives+1" min="1" max="15000">
                             </div>
                             <div>
                                 <label for="diveName">Dive Name</label>
@@ -358,7 +442,7 @@
                                 <input type="number" name="temp_max" placeholder="Temperature Max" min="0" max="99999">
                             </div>
                             <div>
-                                <label for="temp_max">Temperature Avg (&#176;{{tempUnit}})</label>
+                                <label for="temp_avg">Temperature Avg (&#176;{{tempUnit}})</label>
                                 <input type="number" name="temp_avg" placeholder="Temperature Avg" min="0" max="99999">
                             </div>
                         </div>
@@ -385,6 +469,7 @@
                 </form>
             </div>
         </div>
+        <div style="padding: 50px"></div>
     </div>
     <script>
         var app = new Vue({
@@ -393,33 +478,64 @@
             methods: {
                 submitDiveLog: function (e) {
                     const formData = JSON.stringify($("#newDiveForm").serializeObject());
-                    $.ajax({
-                        type: "POST",
-                        url: "/api/dive",
-                        data: formData,
-                        success: function (res) {
-                            console.log(res);
+                    fetch("/api/dive", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
                         },
-                        dataType: "json",
-                        contentType: "application/json"
+                        body: formData
+                    }).then(function (response) {
+                        if (response.ok) {
+                            window.location.reload();
+                        } else {
+                            alert("Error submitting dive log");
+                        }
+                    }).catch(function (error) {
+                        alert("Error submitting dive log");
+                    });
+                },
+                submitAccountEdit: function () {
+                    this.loading = true;
+                    const formData = JSON.stringify($("#accountEditForm").serializeObject());
+                    fetch("/api/account", {
+                        method: "PATCH",
+                        body: formData,
+                        headers: {
+                            "Content-Type": "application/json"
+                        }
+                    }).then(res => {
+                        app.loading = false;
+                        if (res.status === 200) {
+                            window.location.reload();
+                        } else {
+                            res.json().then(d => alert(d.message));
+                        }
+                    }).catch(err => {
+                        app.loading = false;
+                        alert("Error: " + err.responseText);
+                        console.error(err);
                     });
                 },
                 getLogPage: function (index, goNext) {
                     this.loading = true;
-                    $.ajax({
-                        type: "GET",
-                        url: "/api/dives/__USERNAME__/" + index,
-                        success: function (res) {
-                            app.dives.push(res.dives);
-                            app.next_page = res.next_page;
-                            app.next_index++;
-                            if (goNext) { app.active_index++; }
-                        },
-                        complete: function () {
-                            app.loading = false;
-                        },
-                        dataType: "json",
-                        contentType: "application/json"
+                    fetch("/api/dives/__USERNAME__/"+index, {
+                        method: "GET"
+                    }).then(res => {
+                        app.loading = false;
+                        if (res.ok) {
+                            res.json().then(d => {
+                                app.dives.push(d.dives);
+                                app.next_page = d.next_page;
+                                app.next_index++;
+                                if (goNext) { app.active_index++; }
+                            })
+                        } else {
+                            res.json().then(d => alert(d.message));
+                        }
+                    }).catch(err => {
+                        app.loading = false;
+                        alert("Error: " + err.responseText);
+                        console.error(err);
                     });
                 },
                 getNextPage: function () {
@@ -433,9 +549,14 @@
                 getPrevPage: function () {
                     app.active_index--;
                     app.$forceUpdate();
+                },
+                toggleEdit: function () {
+                    app.account.edit=!app.account.edit;
+                    app.$forceUpdate();
                 }
             },
             created: function () {
+                this.account.edit = false;
                 this.loading = true;
                 this.active_index = 0;
                 this.next_page = false;
@@ -447,5 +568,9 @@
             }
         })
     </script>
+    <footer>
+        <p>Log your dives!</p>
+        <p>This site is open source! <a href="https://github.com/galleu/divelog" target="_blank">GitHub</a></p>
+    </footer>
 </body>
 </html>
