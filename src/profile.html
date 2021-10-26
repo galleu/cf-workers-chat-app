@@ -268,7 +268,7 @@
         <div style="text-align: center;">
             <div style="display: block;">
                 <span v-if="account.stats.dive_count">Total Dives: {{ account.stats.dive_count }}</span><br />
-                <span v-if="account.stats.top_locations">Top Locations: {{ account.stats.top_locations.join(', ') }}</span><br />
+                <span v-if="account.stats.top_locations.length">Top Locations: {{ account.stats.top_locations.join(', ') }}</span><br />
                 <span v-if="account.stats.depth_max">Max Depth: {{ account.stats.depth_max }}{{depthUnit}}</span><br />
                 <span v-if="account.stats.depth_avg">Average Depth: {{ account.stats.depth_avg }}{{depthUnit}}</span>
             </div>

@@ -6,8 +6,6 @@ This is a website for logging your scuba dives.
 
 > Existing Profile Example: https://divelog.galleu.workers.dev/user/galleu
 
-> Existing Dive Example: https://divelog.galleu.workers.dev/user/galleu/1
-
 
 ## About 
 
