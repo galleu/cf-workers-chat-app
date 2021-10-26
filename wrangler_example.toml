@@ -1,0 +1,18 @@
+name = "divelog"
+type = "javascript"
+account_id = ""
+
+workers_dev = true
+
+[vars]
+# Use CLI FOR THIS
+Fluff = "AABBCCDDEEFFGGHHIIJJKKLLMMNNOOPPQQRRSSTTUUVVWWXXYYZZ11223344556677889900"
+# hCaptcha secret key 
+CAPTCHA_SECRET = ""
+ 
+[[kv_namespaces]]
+binding = "KV"
+# Testing KV ID
+preview_id = ""
+# Live KV ID
+id = ""
