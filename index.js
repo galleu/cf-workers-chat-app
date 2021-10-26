@@ -31,7 +31,7 @@ const Router = ({ base = '', routes = [] } = {}) => ({
 const router = Router();
 
 const static = {
-    e400: (status, name) =>  new Response(`<!DOCTYPE html>
+    e400: (status, name) => new Response(`<!DOCTYPE html>
 <head>
     <meta charSet="utf-8" />
     <title>${status} ${name}</title>
@@ -42,7 +42,7 @@ const static = {
         <hr />
     </center>
 </body>
-</html>`, { status: status, headers: { "Content-Type": "text/html" }})
+</html>`, { status: status, headers: { "Content-Type": "text/html" } })
 }
 
 const defaults = {
@@ -51,7 +51,7 @@ const defaults = {
     e402: () => static.e400(402, "Payment Required"),
     e403: () => static.e400(403, "Forbidden"),
     e404: () => static.e400(404, "Not Found"),
-    apiError: (msg, status) => new Response(JSON.stringify({error: true, message:msg}), {status, headers: { "Content-Type": "application/json" }})
+    apiError: (msg, status) => new Response(JSON.stringify({ error: true, message: msg }), { status, headers: { "Content-Type": "application/json" } })
 }
 
 
@@ -60,25 +60,25 @@ router.get("/", async (request) => {
     let session = await checkSession(request);
     if (session) {
         const { hostname } = new URL(request.url);
-        return Response.redirect(`https://${hostname}/user/${session.username}`)        
+        return Response.redirect(`https://${hostname}/user/${session.username}`)
     } else {
-        return new Response(await KV.get("app:html:index"), {  headers: { "Content-Type": "text/html" } })
+        return new Response(await KV.get("app:html:index"), { headers: { "Content-Type": "text/html" } })
     }
 })
 
 
 router.get("/user/:id", async request => {
-    let [session, owner] = await Promise.all([checkSession(request), KV.get("users:"+request.params.id, {type:"json"})]);
+    let [session, owner] = await Promise.all([checkSession(request), KV.get("users:" + request.params.id, { type: "json" })]);
     if (!owner) return new Response("404 - User not found", { status: 404, headers: { "Content-Type": "text/html" } })
-    
+
     let isOwner = session.username == owner.username;
-    
+
     // Hide profile if owner's visibility is set to private, or is not the owner 
     if (owner.public || isOwner) {
         try {
-            let [html, dives] = await Promise.all([KV.get("app:html:profile"), KV.get("users:"+owner.username+":dives", {type: 'json'})])
+            let [html, dives] = await Promise.all([KV.get("app:html:profile"), KV.get("users:" + owner.username + ":dives", { type: 'json' })])
             if (!dives) dives = [];
-            
+
             let displayed = {
                 favorite: [],
                 most_recent: [],
@@ -90,12 +90,12 @@ router.get("/user/:id", async request => {
                     };
                 });
             };
-            
+
             dives.slice(-10).forEach(dive => {
                 if (dive.hidden || !isOwner) return;
                 displayed.most_recent.push(dive);
             });
-    
+
             // Find the max depth from all the dives
             let maxDepth = 0;
             let maxTime = 0;
@@ -109,25 +109,25 @@ router.get("/user/:id", async request => {
 
             // Number of dives
             let diveCount = 0;
-            
+
             try {
                 dives.forEach(dive => {
                     diveCount++;
                     // Find the max time from all the dives
                     if (dive.depth > maxDepth) maxDepth = dive.depth;
-    
+
                     // Find the max time from all the dives
                     if (dive.time > maxTime) maxTime = dive.time;
-    
+
                     // Find the average depth of all the dives
                     avgDepth += dive.depth.avg;
-    
+
                     // Find the average time of all the dives
                     avgTime += dive.time;
-    
+
                     // Find the average temperature of all the dives
                     avgTemp += dive.temperature.avg;
-    
+
                     // Find the average air usage of all the dives
                     avgAirUsage += dive.o2.start - dive.o2.end;
                 });
@@ -193,7 +193,7 @@ router.get("/user/:id", async request => {
         }
     } else {
         return new Response("This user has a private profile")
-    }    
+    }
 })
 
 // Account object example
@@ -205,7 +205,7 @@ const EXAMPLE_account = {
     favorite_dives: [],
     num_dives: 0,
     bio: "",
-};   
+};
 
 // Dive log object example
 const EXAMPLE_diveLog = {
@@ -269,7 +269,7 @@ router.post("/api/auth", async (request) => {
     if (!body) return defaults.apiError("No body", 400);
     // Make sure the type of request is valid
     if (!["login", "register"].includes(body.type)) return defaults.apiError("Invalid type", 400);
-    
+
     // Never trust the client
     if (!body.username || !body.password) return defaults.apiError("Missing username or password", 400);
     if (!/^[a-zA-Z0-9_]+$/.test(body.username)) return defaults.apiError("Invalid username", 400);
@@ -285,7 +285,7 @@ router.post("/api/auth", async (request) => {
 
     if (body.type === "login") {
         // Get the user from the KV store
-        let user = await KV.get("users:"+body.username, {type: 'json'});
+        let user = await KV.get("users:" + body.username, { type: 'json' });
         if (user) {
             // Hash the password and make sure its correct
             const password = await hashPassword(body.password);
@@ -306,7 +306,7 @@ router.post("/api/auth", async (request) => {
                     ip: request.headers.get('CF-Connecting-IP')
                 }), { expirationTtl: 604800, metadata: { username: user.username, created: +Date.now(), expires: +Date.now() + 604800000 } });
                 // Make a response with the token and set the clients cookie to the token
-                let res = new Response("OK", {status: 200})
+                let res = new Response("OK", { status: 200 })
 
                 // If used in production, set the cookie domain to same domain as app
                 const { hostname } = new URL(request.url);
@@ -329,7 +329,7 @@ router.post("/api/auth", async (request) => {
             if (verify.success) {
                 // If captcha is valid
                 // Make sure the username is not taken
-                let user = await KV.get("users:"+body.username, { type: 'json' });
+                let user = await KV.get("users:" + body.username, { type: 'json' });
                 if (user) {
                     return defaults.apiError("Username already taken", 403)
                 } else {
@@ -345,8 +345,8 @@ router.post("/api/auth", async (request) => {
                         disabled: false
                     };
                     // Save the new username and return a 200 response, so the client can login with the new account.
-                    await KV.put("users:"+body.username, JSON.stringify(user), {metadata: { username: user.username, created: +Date.now(), last_login: null }});
-                    return new Response("OK", {status: 200});
+                    await KV.put("users:" + body.username, JSON.stringify(user), { metadata: { username: user.username, created: +Date.now(), last_login: null } });
+                    return new Response("OK", { status: 200 });
                 }
             } else {
                 return defaults.apiError("Invalid Captcha", 403)
@@ -366,10 +366,10 @@ router.post("/api/auth", async (request) => {
 router.patch("/api/account", async request => {
     let session = await checkSession(request);
     if (session) {
-        let account = await KV.get('users:'+session.username, { type:"json" })
+        let account = await KV.get('users:' + session.username, { type: "json" })
         if (!account) return defaults.apiError("401 Unauthorized", 401)
         if (account.disabled) return defaults.apiError("403 This account has been disabled", 403)
-        
+
         const type = request.headers.get("update-type");
         if (type === "pfp") {
             account.pfp = "";//
@@ -377,7 +377,7 @@ router.patch("/api/account", async request => {
             try {
                 const session_id = getSessionToken(request);
                 await Promise.all([
-                    KV.put('users:'+session.username, JSON.stringify(account)),
+                    KV.put('users:' + session.username, JSON.stringify(account)),
                     KV.put(`sessions:${session_id}`, JSON.stringify(session))
                 ]);
                 return new Response(contentHash)
@@ -391,7 +391,7 @@ router.patch("/api/account", async request => {
             try {
                 const session_id = getSessionToken(request);
                 await Promise.all([
-                    KV.put('users:'+session.username, JSON.stringify(account)),
+                    KV.put('users:' + session.username, JSON.stringify(account)),
                     KV.put(`sessions:${session_id}`, JSON.stringify(session))
                 ]);
                 return new Response(contentHash)
@@ -413,22 +413,77 @@ router.post("/api/dive", async request => {
 
     let body = await request.json()
     if (!body) return defaults.e400();
-    
-    let account = await KV.get('users:'+session.username, { type:'json' });
+
+    let account = await KV.get('users:' + session.username, { type: 'json' });
     if (!account) return defaults.apiError("401 Unauthorized", 401);
 
-    let dives = await KV.get('users:'+session.username+":dives", { type:"json" });
+    let dives = await KV.get('users:' + session.username + ":dives", { type: "json" });
     dives = dives || [];
-    
-    // Make sure dive is not already in the dives array by array index value
-    if (dives.findIndex(dive => dive.id === body.id) !== -1) return defaults.apiError("Dive already exists", 400);
-    
-    // Push the dive to the to the dives array in the index if the dive id
-    let dive = {
-        id: body.id,
-        body
+
+    // Make sure body number is a valid number
+    const id = parseInt(body.number);
+    if (!Number.isInteger(id) && id > 0 && id <= 15000) return new Response("Invalid dive number");
+    if (!body.number || isNaN(id)) return defaults.apiError("Invalid dive number", 400);
+
+    // Make sure no one submits something that to two long.
+    if (body.name.length > 256) return defaults.apiError("Dive name too long", 400);
+    if (body.location.length > 512) return defaults.apiError("Dive location too long", 400); 
+    if (body.time_start.length > 5) return defaults.apiError("Dive start time too long", 400);
+    if (body.time_end.length > 5) return defaults.apiError("Dive end time too long", 400);
+    if (body.date.length > 10) return defaults.apiError("Dive date too long", 400);
+    if (body.depth_max.length > 5) return defaults.apiError("Dive max depth too long", 400);
+    if (body.depth_avg.length > 5) return defaults.apiError("Dive avg depth too long", 400);
+    if (body.deco_time.length > 5) return defaults.apiError("Dive deco time too long", 400);
+    if (body.deco_depth.length > 5) return defaults.apiError("Dive deco depth too long", 400);
+    if (body.o2_start.length > 5) return defaults.apiError("Dive O2 start too long", 400);
+    if (body.o2_end.length > 5) return defaults.apiError("Dive O2 end too long", 400);
+    if (body.o2_mixture.length > 128) return defaults.apiError("Dive O2 mixture too long", 400);
+    if (body.temp_min.length > 5) return defaults.apiError("Dive temp min too long", 400);
+    if (body.temp_max.length > 5) return defaults.apiError("Dive temp max too long", 400);
+    if (body.temp_avg.length > 5) return defaults.apiError("Dive temp avg too long", 400);
+    if (body.visibility.length > 5) return defaults.apiError("Dive visibility too long", 400);
+    if (body.equipment.length > 128) return defaults.apiError("Dive equipment too long", 400);
+    if (body.buddies.length > 256) return defaults.apiError("Dive buddies too long", 400);
+    if (body.dive_notes.length > 2048) return defaults.apiError("Dive notes too long", 400);
+
+    // Make sure we don't push anything else to the users dives
+    const dive = {
+        id: id,
+        name: body.name,
+        location: body.location,
+        time_start: body.time_start,
+        time_end: body.time_end,
+        date: body.date,
+        depth_max: body.depth_max,
+        depth_avg: body.depth_avg,
+        deco_time: body.deco_time,
+        deco_depth: body.deco_depth,
+        o2_start: body.o2_start,
+        o2_end: body.o2_end,
+        o2_mixture: body.o2_mixture,
+        temp_min: body.temp_min,
+        temp_max: body.temp_max,
+        temp_avg: body.temp_avg,
+        visibility: body.visibility,
+        equipment: body.equipment,
+        buddies: body.buddies,
+        dive_notes: body.dive_notes
     }
-    dives.push(dive);
+
+    // Check if the dive is already in the array and replace it
+
+    let replaced = false;
+    for (let i = 0; i < dives.length; i++) {
+        if (dives[i].id === id) {
+            dives[i] = dive;
+            replaced = true;
+            break;
+        }
+    }
+    
+    if (!replaced) dives.push(dive);
+
+    // Make there there are not more then 15000 dives logged
     if (dives.length > 15000) return defaults.apiError("Too many dives, Sorry", 400);
 
     // sort dives by number id descending
@@ -436,8 +491,9 @@ router.post("/api/dive", async request => {
 
     // Save the dives array to the KV store
     try {
-        await KV.put('users:'+session.username+":dives", JSON.stringify(dives), { metadata: { updated: +Date.now() } });
-        return new Response("OK", {status: 200});
+        await KV.put('users:' + session.username + ":dives", JSON.stringify(dives), { metadata: { updated: +Date.now() } });
+        if (replaced) return new Response("Dive Updated");
+        return new Response("OK");
     } catch (err) {
         return defaults.apiError("Error trying to save dives to account", 500);
     }
@@ -445,21 +501,21 @@ router.post("/api/dive", async request => {
 
 
 // API for returning 20 dives from the user
-router.get("/api/dives/:user_id/:index", async  request => {
+router.get("/api/dives/:user_id/:index", async request => {
     // Make sure the dive_index is a valid integer within the range of 1-750
     if (isNaN(request.params.index) && !isFinite(request.params.index)) return new Response("Invalid dive number");
     const index = parseInt(request.params.index);
     if (!Number.isInteger(index) && index >= 0 && index <= 750) return new Response("Invalid dive number");
 
-    const [session, owner] = await Promise.all([checkSession(request), KV.get("users:"+request.params.user_id, {type: 'json'})]);
+    const [session, owner] = await Promise.all([checkSession(request), KV.get("users:" + request.params.user_id, { type: 'json' })]);
     if (!owner) {
-        return new Response("User not found", {status: 404, headers: { "Content-Type": "text/html" }});
+        return new Response("User not found", { status: 404, headers: { "Content-Type": "text/html" } });
     };
 
     // Check if the user has a public profile, and if not return an error.
     if (session.username === owner.username || owner.public) {
-        const dives = await KV.get("users:"+request.params.user_id+":dives", { type:"json" });
-        if (!dives) return new Response("No dives found", {status: 404, headers: { "Content-Type": "text/html" }});
+        const dives = await KV.get("users:" + request.params.user_id + ":dives", { type: "json" });
+        if (!dives) return new Response("No dives found", { status: 404, headers: { "Content-Type": "text/html" } });
 
         // Get the first 20 dives from the dives array
         const dive_index = index;
@@ -468,12 +524,12 @@ router.get("/api/dives/:user_id/:index", async  request => {
         const dive_slice = dives.slice(dive_start, dive_end);
 
         // Check if there is another page of dives to load
-        const next_page = !!dives[dive_end+1];
+        const next_page = !!dives[dive_end + 1];
 
         if (dive_slice.length > 0) {
 
             // return a JSON array of the 20 dives
-            return new Response(JSON.stringify({dives:dive_slice, next_page}), {status: 200, headers: { "Content-Type": "application/json" }});
+            return new Response(JSON.stringify({ dives: dive_slice, next_page }), { status: 200, headers: { "Content-Type": "application/json" } });
         } else {
             // If there are no dives to return, return a 404
             return new Response("404 - Dives Not Found", { status: 404, headers: { "Content-Type": "text/html" } })
@@ -493,11 +549,11 @@ router.get("/logout", async request => {
     if (session_id) {
         await KV.delete(`sessions:${session_id}`);
     };
-    let res = new Response(null, {status: 302});
+    let res = new Response(null, { status: 302 });
     res.headers.set('Set-Cookie', `session=null;Domain=.arcsky.net; Secure; HttpOnly; Max-Age=0`);
     res.headers.set('location', "https://arcsky.net/")
     if (sid) {
-        await KV.delete('session:'+sid);
+        await KV.delete('session:' + sid);
         return res;
     } else return res;
 })
@@ -510,20 +566,20 @@ addEventListener("fetch", (event) => {
 });
 
 async function logError(err, request) {
-    await KV.put(`app:logging:error:${+Date.now()}`, JSON.stringify({message: err.message, stack: err.stack, created: +Date.now(), userAgent: request.headers.get('user-agent')}));
+    await KV.put(`app:logging:error:${+Date.now()}`, JSON.stringify({ message: err.message, stack: err.stack, created: +Date.now(), userAgent: request.headers.get('user-agent') }));
 }
 
 
-async function shaHash (value) {
+async function shaHash(value) {
     const text = new TextEncoder().encode(value);
-    const hashBuffer = await crypto.subtle.digest( { name: "SHA-256" }, text);
+    const hashBuffer = await crypto.subtle.digest({ name: "SHA-256" }, text);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     return hashHex;
 }
 
 async function HashMd(buffer) {
-    const hashBuffer = await crypto.subtle.digest( { name: "md5" }, buffer);
+    const hashBuffer = await crypto.subtle.digest({ name: "md5" }, buffer);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     return hashHex;
@@ -540,7 +596,7 @@ function getSessionToken(request) {
     if (session) {
         const cookies = new URLSearchParams(cookie);
         session = cookies.get('session');
-        if (session && session.length === (String(Fluff).length)*2) {
+        if (session && session.length === (String(Fluff).length) * 2) {
             return session
         } else return false
     } else return false
@@ -549,7 +605,7 @@ function getSessionToken(request) {
 async function checkSession(request) {
     const session_id = getSessionToken(request);
     if (session_id) {
-        const session = await KV.get(`sessions:${session_id}`, { type:"json" });
+        const session = await KV.get(`sessions:${session_id}`, { type: "json" });
         if (session && session.accept) {
             return session
         } else return false
