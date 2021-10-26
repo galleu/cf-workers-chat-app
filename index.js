@@ -74,7 +74,7 @@ router.get("/user/:id", async request => {
     let isOwner = session.username == owner.username;
     
     // Hide profile if owner's visibility is set to private, or is not the owner 
-    if (owner.visibility > 0 || isOwner) {
+    if (owner.public || isOwner) {
         try {
             let [html, dives] = await Promise.all([KV.get("app:html:profile"), KV.get("users:"+owner.username+"dives", {type: 'json'})])
             if (!dives) dives = [];
@@ -154,7 +154,7 @@ router.get("/user/:id", async request => {
                 username: owner.username,
                 name: owner.display_name,
                 pfp: owner.pfp,
-                visibility: owner.visibility,
+                public: owner.public,
                 metric: owner.metric,
                 bio: owner.bio,
                 self: isOwner,
@@ -197,7 +197,7 @@ router.get("/user/:id", async request => {
 const EXAMPLE_account = {
     username: "",
     pfp: "",
-    visibility: 0,
+    public: false,
     metric: false,
     favorite_dives: [],
     num_dives: 0,
@@ -336,7 +336,7 @@ router.post("/api/auth", async (request) => {
                         display_name: body.username,
                         pfp: null,
                         metric: true,
-                        visibility: 0,
+                        public: false,
                         favorite_dives: [],
                         bio: "",
                         disabled: false
@@ -384,9 +384,7 @@ router.patch("/api/account", async request => {
         } else if (type === "settings") {
             const settings = await request.json();
             if (settings.metric) account.metric = true;
-            else account.metric = false;
-            if (settings.visibility) account.visibility = settings.visibility;
-            else account.visibility = 0;
+            if (settings.public) account.public = settings.public;
             try {
                 const session_id = getSessionToken(request);
                 await Promise.all([
@@ -453,12 +451,8 @@ router.get("/api/:user_id/:index", async  request => {
         return new Response("User not found", {status: 404, headers: { "Content-Type": "text/html" }});
     };
 
-    // Check visibility settings, and don't return the page if the user does not allow it to be public.
-    let canAccess = false;
-    if (session.username === owner.username) canAccess = true;
-    else if (owner.visibility > 1) canAccess = true;
-    // If its public or the owner/author is accessing it then allow it.
-    if (canAccess) {
+    // Check if the user has a public profile, and if not return an error.
+    if (session.username === owner.username || owner.public) {
         const [dives, html] = await Promise.all([KV.get("users:"+session.username+":dives", { type:"json" }), KV.get("app:html:dive")]);
         // Get the first 20 dives from the dives array
         const dive_index = parseInt(request.params.index);
