@@ -84,8 +84,9 @@
         <div>
             <input type="text" id="username" placeholder="Username" maxlength="16" /><br />
             <input type="password" id="password" placeholder="Password" maxlength="256" />
-            <div style="padding-top: 15px;">
-                <div id="register-captcha" style="display: none;" class="h-captcha" data-sitekey="49c837a9-38a9-4546-87e1-3daab5cbe285" data-theme="dark"></div>
+            <div id="register-captcha" style="display: none; padding-top: 15px;">
+                <p>Note: You can NOT change your username once your account has been made.</p>
+                <div class="h-captcha" data-sitekey="49c837a9-38a9-4546-87e1-3daab5cbe285" data-theme="dark"></div>
             </div>
         </div>
         <p>
@@ -93,6 +94,7 @@
             <a onclick="register()">Register</a>
         </p>
         <script>
+            var passwordWarned = false;
             function login() {
                 fetch('/api/auth', {
                     method: 'POST',
@@ -131,10 +133,9 @@
                     return;
                 };
                 if (!/^.*(?=.{8,})((?=.*[!@#$%^&*()\-_=+{};:,<.>]){1})(?=.*\d)((?=.*[a-z]){1})((?=.*[A-Z]){1}).*$/.test(password.value)) {
-                    let weekPassword = window.confirm("You might want a stronger password?");
-                    if (!weekPassword) {
-                        return;
-                    };
+                    if (passwordWarned) return;
+                    passwordWarned = true;
+                    alert("You might want a stronger password? (not required)");    
                 };
 
                 if (captcha.style.display === 'none') {
@@ -147,6 +148,10 @@
                         return;
                     };
                     grecaptcha.reset();
+                    var timeout = true;
+                    setTimeout(function() {
+                        if (timeout) alert("Something seems to be takeing long, try refreshing the page")
+                    }, 6000)
                     fetch('/api/auth', {
                         method: 'POST',
                         headers: {
@@ -159,6 +164,7 @@
                             captcha: captchaKey
                         })
                     }).then(function(response) {
+                        timeout = false;
                         if (response.status === 200) {
                             login()
                         } else if  (response.status === 400 || response.status === 403) {
