@@ -442,10 +442,12 @@ router.post("/api/dive", async request => {
 
 
 // API for returning 20 dives from the user
-router.get("/api/:user_id/:index", async  request => {
-    // Make sure the dive_index is a number
-    if (isNaN(request.params.index) || isFinite(request.params.index)) return new Response("Invalid dive number")
-    
+router.get("/api/dives/:user_id/:index", async  request => {
+    // Make sure the dive_index is a valid integer within the range of 1-750
+    if (isNaN(request.params.index) && !isFinite(request.params.index)) return new Response("Invalid dive number");
+    const index = parseInt(request.params.index);
+    if (!Number.isInteger(index) && index >= 0 && index <= 750) return new Response("Invalid dive number");
+
     const [session, owner] = await Promise.all([checkSession(request), KV.get("users:"+request.params.user_id, {type: 'json'})]);
     if (!owner) {
         return new Response("User not found", {status: 404, headers: { "Content-Type": "text/html" }});
@@ -453,21 +455,23 @@ router.get("/api/:user_id/:index", async  request => {
 
     // Check if the user has a public profile, and if not return an error.
     if (session.username === owner.username || owner.public) {
-        const [dives, html] = await Promise.all([KV.get("users:"+session.username+":dives", { type:"json" }), KV.get("app:html:dive")]);
+        const dives = await KV.get("users:"+session.username+":dives", { type:"json" });
         // Get the first 20 dives from the dives array
-        const dive_index = parseInt(request.params.index);
-        const dive_count = dives.length;
+        const dive_index = index;
         const dive_start = dive_index * 20;
         const dive_end = dive_start + 20;
         const dive_slice = dives.slice(dive_start, dive_end);
 
-        // Make sure there are dives to return
+        // Check if there is another page of dives to load
+        const nextPage = !!dives[dive_end+1];
+
         if (dive_slice.length > 0) {
+
             // return a JSON array of the 20 dives
-            return new Response(JSON.stringify(dive_slice), {status: 200, headers: { "Content-Type": "application/json" }});
+            return new Response(JSON.stringify({dives:dive_slice, nextPage}), {status: 200, headers: { "Content-Type": "application/json" }});
         } else {
             // If there are no dives to return, return a 404
-            return new Response("{404 - Dives Not Found}", { status: 404, headers: { "Content-Type": "text/html" } })
+            return new Response("404 - Dives Not Found", { status: 404, headers: { "Content-Type": "text/html" } })
         }
     } else {
         return new Response("403 - This user has a private profile", { status: 403, headers: { "Content-Type": "text/html" } })
