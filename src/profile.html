@@ -1,224 +1,223 @@
-<!DOCTYPE html>
-<html lang="en">
+    <!DOCTYPE html>
+    <html lang="en">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <title>__NAME__ | Dive Log</title>
-    <style>
-        body {
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 14px;
-            line-height: 1.5;
-            margin: 0;
-            padding: 0;
-        }
-
-
-        /* Dive log list */
-
-        form {
-            display: block
-        }
-
-        form input {
-            all: unset;
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+        <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+        <!--<script src="https://cdn.jsdelivr.net/npm/vue@2"></script>-->
+        <title>__NAME__ | Dive Log</title>
+        <style>
+            body {
+                font-family: Arial, Helvetica, sans-serif;
+                font-size: 14px;
+                line-height: 1.5;
+                margin: 0;
+                padding: 0;
+            }
 
 
+            /* Dive log list */
 
-        }
-    </style>
-</head>
-<body>
-    <div id="app">
-        <div style="text-align: center;">
-            <h1>__NAME__</h1>
-            <img v-id="account.pfp" src="__PFP__" alt="__NAME__'s Profile Picture">
-            <p>__BIO__</p>
-        </div>
-        <div style="text-align: center;">
-            <span>Total Dives: {{ account.stats.dives }}</span>
-            <span>Top Locals: {{ account.stats.locations }}</span>
-            <span>Max Depth: {{ account.stats.depthMax }}</span>
-            <span>Average Depth: {{ account.stats.depthAvg }}</span>
-        </div>
-        <div>
-            <div>
-                <h3>Top/Fav Dives</h3>
+            form {
+                display: block
+            }
+
+            form input {
+                all: unset;
+
+
+
+            }
+        </style>
+    </head>
+    <body>
+        <div id="app">
+            <div style="text-align: center;">
+                <h1>__NAME__</h1>
+                <img src="__PFP__" alt="__NAME__'s Profile Picture">
+                <p>__BIO__</p>
+            </div>
+            <div style="text-align: center;">
+                <span>Total Dives: {{ account.stats.dives }}</span>
+                <span>Top Locals: {{ account.stats.locations }}</span>
+                <span>Max Depth: {{ account.stats.depthMax }}</span>
+                <span>Average Depth: {{ account.stats.depthAvg }}</span>
             </div>
             <div>
-                <h3>Newest Dives</h3>
-            </div>
-            <div v-if="account.self">
-                <button>Add New Dive</button>
-                <form id="newDiveForm" @submit.prevent="submitDiveLog">
-                    <div>
-                        <input type="number" name="number" placeholder="Dive Number" :value="account.stats.diveCount+1">
-                    </div>
-                    <div>
-                        <label for="diveName">Dive Name</label>
-                        <input type="text" name="name" placeholder="Dive Name">
-                        <label for="diveLoc">Dive Location</label>
-                        <input type="text" name="location" placeholder="Dive Location">
-                        <label for="date">Dive Date</label>
-                        <input type="date" name="date" placeholder="Dive Date">
-                        <label for="time_start">Start Time</label>
-                        <input type="time" name="time_start" placeholder="Dive Start Time">
-                        <label for="time_end">End Time</label>
-                        <input type="time" name="time_end" placeholder="Dive End Time">
-                    </div>
-                    <div>
-                        <label for="depth_max">Dive Max Depth</label>
-                        <input type="text" name="depth_max" placeholder="Dive Max Depth"><span v-text="depthUnit"></span>
-                        <label for="depth_avg">Dive Average Depth</label>
-                        <input type="text" name="depth_avg" placeholder="Dive Average Depth"><span v-text="depthUnit"></span>
-                        <label for="deco_time">Deco Duration</label>
-                        <input type="text" name="deco_time" placeholder="Deco Duration"><span>min</span>
-                        <label for="deco_depth">Deco Depth</label>
-                        <input type="text" name="deco_depth" placeholder="Deco Depth"><span v-text="depthUnit"></span>
-                    </div>
-                    <div>
-                        <label for="o2_start">O2 Start</label>
-                        <input type="number" name="o2_start" placeholder="O2 Start"><span v-text="pressureUnit"></span>
-                        <label for="o2_end">O2 End</label>
-                        <input type="number" name="o2_end" placeholder="O2 End"><span v-text="pressureUnit"></span>
-                        <input type="text" name="o2_mixture" placeholder="O2 Mixture" value="21%">
-                    </div>
-                    <div>
-                        <input type="number" name="temp_min" placeholder="temperature Min"><span v-text="tempUnit"></span>
-                        <input type="number" name="temp_max" placeholder="temperature Max"><span v-text="tempUnit"></span>
-                    </div>
-                    <div>
-                        <input type="text" name="equipment" placeholder="Equipment">
-                        <input type="text" name="Buddies" placeholder="Buddies (name, name)">
-                        <input type="text" name="visibility" placeholder="Dive Visibility">
-                    </div>
-                    <div>
-                        <label for="dive_notes">Dive Notes</label>
-                        <textarea name="dive_notes" id="" cols="30" rows="10"></textarea>
-                    </div>
-                    <input type="submit" value="Add Dive">
-                </form>
-            </div>
-        </div>
-        <div>
-            <h3>Dive Log</h3>
-            <div v-if="dives" v-for="(page, index) in dives">
-                <div v-if="index == dive_page" v-for="dive in page">
-                    <div>
-                        <h4>{{ dive.name }}</h4>
-                        <p>{{ dive.location }}</p>
-                        <p>{{ dive.date }}</p>
-                        <p>{{ dive.time_start }} - {{ dive.time_end }}</p>
-                        <p>{{ dive.depth_max }} - {{ dive.depth_avg }}</p>
-                        <p>{{ dive.deco_time }}</p>
-                        <p>{{ dive.deco_depth }}</p>
-                        <p>{{ dive.o2_start }} - {{ dive.o2_end }}</p>
-                        <p>{{ dive.temp_min }} - {{ dive.temp_max }}</p>
-                        <p>{{ dive.equipment }}</p>
-                        <p>{{ dive.Buddies }}</p>
-                        <p>{{ dive.visibility }}</p>
-                        <p>{{ dive.dive_notes }}</p>
-                    </div>
+                <div>
+                    <h3>Top/Fav Dives</h3>
+                </div>
+                <div>
+                    <h3>Newest Dives</h3>
+                </div>
+                <div v-if="account.self">
+                    <button>Add New Dive</button>
+                    <form id="newDiveForm" @submit.prevent="submitDiveLog">
+                        <div>
+                            <input type="number" name="number" placeholder="Dive Number" :value="account.stats.diveCount+1">
+                        </div>
+                        <div>
+                            <label for="diveName">Dive Name</label>
+                            <input type="text" name="name" placeholder="Dive Name">
+                            <label for="diveLoc">Dive Location</label>
+                            <input type="text" name="location" placeholder="Dive Location">
+                            <label for="date">Dive Date</label>
+                            <input type="date" name="date" placeholder="Dive Date">
+                            <label for="time_start">Start Time</label>
+                            <input type="time" name="time_start" placeholder="Dive Start Time">
+                            <label for="time_end">End Time</label>
+                            <input type="time" name="time_end" placeholder="Dive End Time">
+                        </div>
+                        <div>
+                            <label for="depth_max">Dive Max Depth</label>
+                            <input type="text" name="depth_max" placeholder="Dive Max Depth"><span v-text="depthUnit"></span>
+                            <label for="depth_avg">Dive Average Depth</label>
+                            <input type="text" name="depth_avg" placeholder="Dive Average Depth"><span v-text="depthUnit"></span>
+                            <label for="deco_time">Deco Duration</label>
+                            <input type="text" name="deco_time" placeholder="Deco Duration"><span>min</span>
+                            <label for="deco_depth">Deco Depth</label>
+                            <input type="text" name="deco_depth" placeholder="Deco Depth"><span v-text="depthUnit"></span>
+                        </div>
+                        <div>
+                            <label for="o2_start">O2 Start</label>
+                            <input type="number" name="o2_start" placeholder="O2 Start"><span v-text="pressureUnit"></span>
+                            <label for="o2_end">O2 End</label>
+                            <input type="number" name="o2_end" placeholder="O2 End"><span v-text="pressureUnit"></span>
+                            <input type="text" name="o2_mixture" placeholder="O2 Mixture" value="21%">
+                        </div>
+                        <div>
+                            <input type="number" name="temp_min" placeholder="temperature Min"><span v-text="tempUnit"></span>
+                            <input type="number" name="temp_max" placeholder="temperature Max"><span v-text="tempUnit"></span>
+                        </div>
+                        <div>
+                            <input type="text" name="equipment" placeholder="Equipment">
+                            <input type="text" name="Buddies" placeholder="Buddies (name, name)">
+                            <input type="text" name="visibility" placeholder="Dive Visibility">
+                        </div>
+                        <div>
+                            <label for="dive_notes">Dive Notes</label>
+                            <textarea name="dive_notes" id="" cols="30" rows="10"></textarea>
+                        </div>
+                        <input type="submit" value="Add Dive">
+                    </form>
                 </div>
             </div>
-            <span>Page: {{dive_page}}/{{Math.round(total_dives / 20)}}</span>
-            <button v-if="dives" @click="dive_page = dive_page - 1" :disabled="dive_page==0">Previous</button>
-            <button v-if="dives" @click="nextPage" :disabled="!next_page">Next</button>
+            <div>
+                <h3>Dive Log</h3>
+                <div v-for="dive in dives[active_index]">
+                    {{dive}}
+                </div>
+                <span>{{active_index + 1}}/{{Math.round(total_dives/20)}}</span>
+                <button @click="getPrevPage" :disabled="active_index==0 || loading">Previous</button>
+                <button @click="getNextPage" :disabled="!next_page || loading">Next</button> 
+            </div>
         </div>
-    </div>
-    <script>
-        var app = new Vue({
-            el: '#app',
-            data: __DATA__,
-            methods: {
-                submitDiveLog: function(e) {
-                    const formData = JSON.stringify($("#newDiveForm").serializeArray());
-                    $.ajax({
-                        type: "POST",
-                        url: "/api/dive",
-                        data: formData,
-                        success: function(res){
-                            console.log(res);
-                        },
-                        dataType: "json",
-                        contentType : "application/json"
-                    });
+        <script>
+            var app = new Vue({
+                el: '#app',
+                data: __DATA__,
+                methods: {
+                    submitDiveLog: function(e) {
+                        const formData = JSON.stringify($("#newDiveForm").serializeArray());
+                        $.ajax({
+                            type: "POST",
+                            url: "/api/dive",
+                            data: formData,
+                            success: function(res){
+                                console.log(res);
+                            },
+                            dataType: "json",
+                            contentType : "application/json"
+                        });
+                    },
+                    getLogPage: function (index, goNext) {
+                        this.loading = true;
+                        $.ajax({
+                            type: "GET",
+                            url: "/api/dives/__USERNAME__/" + index,
+                            success: function(res){
+                                app.dives.push(res.dives);
+                                app.next_page = res.next_page;
+                                app.next_index++;
+                                if (goNext) { app.active_index++; }
+                            },
+                            complete: function() {
+                                app.loading = false;
+                            },
+                            dataType: "json",
+                            contentType : "application/json"
+                        });
+                    },
+                    getNextPage: function () {
+                        if (app.active_index+1 == app.next_index) {
+                            app.getLogPage(app.next_index, true);
+                        } else {
+                            app.active_index++;
+                        }
+                        app.$forceUpdate();
+                    },
+                    getPrevPage: function () {
+                        app.active_index--;
+                        app.$forceUpdate();
+                    }
                 },
-                getLogPage: function (index, goNext) {
-                    $.ajax({
-                        type: "GET",
-                        url: "/api/dives/__USERNAME__/" + index,
-                        success: function(res){
-                            app.dives.push(res.dives);
-                            app.next_page = res.next_page;
-                            app.next_index = index++;
-                            if (goNext) { app.dive_page++; }
-                        },
-                        dataType: "json",
-                        contentType : "application/json"
-                    });
+                created: function() {
+                    this.loading = true;
+                    this.active_index = 0;
+                    this.next_page = false;
+                    this.next_index = 0;
+                    this.getLogPage(0, false);
                 },
-                nextPage: function () {
-                    app.getLogPage(app.next_index + 1, true);
+                mounted: function () {
+
                 }
-            },
-            created: function() {
-                this.next_page = false;
-                this.next_index = 0;
-                this.dive_page = 0;
-                this.getLogPage(0, false);
-            },
-            mounted: function () {
-                console.log("Mounted")
+            })
+            
+            // Dive log object example
+            const EXAMPLE_diveLog = {
+                time: {
+                    start: "",
+                    end: "",
+                    duration: 0,
+                },
+                depth: {
+                    max: 0,
+                    avg: 0
+                },
+                o2: {
+                    start: "",
+                    end: "",
+                    mixture: "",
+                },
+                location: "",
+                notes: "",
+                temperature: {
+                    min: 0,
+                    max: 0,
+                    avg: 0
+                },
+                weight: "",
+                deco: {
+                    depth: "",
+                    time: ""
+                },
+                dive_type: ["Wreck", "Reef", "Cave", "Search & Recovery", "Deep Dive", "Night Dive", "Altitude Dive", "Ice Dive"],
+                equipment: "",
+                buddies: [],
+                environment: {
+                    sky: ["Sunny", "Cloudy", "Dark", "Raining", "Snowing", "Storming", "Foggy", "Overcast", "Clear", "Stormy", "Foggy", "Overcast", "Clear"],
+                    water: ["Clear", "Salty", "Fresh", "Salty", "Fresh"],
+                    visibility: 0
+                },
+                photos: [],
+                videos: [],
+                tags: [],
+                rating: 0,
+                clothes: ""
             }
-        })
+        </script>
+    </body>
 
-        // Dive log object example
-        const EXAMPLE_diveLog = {
-            time: {
-                start: "",
-                end: "",
-                duration: 0,
-            },
-            depth: {
-                max: 0,
-                avg: 0
-            },
-            o2: {
-                start: "",
-                end: "",
-                mixture: "",
-            },
-            location: "",
-            notes: "",
-            temperature: {
-                min: 0,
-                max: 0,
-                avg: 0
-            },
-            weight: "",
-            deco: {
-                depth: "",
-                time: ""
-            },
-            dive_type: ["Wreck", "Reef", "Cave", "Search & Recovery", "Deep Dive", "Night Dive", "Altitude Dive", "Ice Dive"],
-            equipment: "",
-            buddies: [],
-            environment: {
-                sky: ["Sunny", "Cloudy", "Dark", "Raining", "Snowing", "Storming", "Foggy", "Overcast", "Clear", "Stormy", "Foggy", "Overcast", "Clear"],
-                water: ["Clear", "Salty", "Fresh", "Salty", "Fresh"],
-                visibility: 0
-            },
-            photos: [],
-            videos: [],
-            tags: [],
-            rating: 0,
-            clothes: ""
-        }
-    </script>
-</body>
-
-</html>
+    </html>

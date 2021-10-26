@@ -458,7 +458,9 @@ router.get("/api/dives/:user_id/:index", async  request => {
 
     // Check if the user has a public profile, and if not return an error.
     if (session.username === owner.username || owner.public) {
-        const dives = await KV.get("users:"+session.username+":dives", { type:"json" });
+        const dives = await KV.get("users:"+request.params.user_id+":dives", { type:"json" });
+        if (!dives) return new Response("No dives found", {status: 404, headers: { "Content-Type": "text/html" }});
+
         // Get the first 20 dives from the dives array
         const dive_index = index;
         const dive_start = dive_index * 20;
@@ -466,12 +468,12 @@ router.get("/api/dives/:user_id/:index", async  request => {
         const dive_slice = dives.slice(dive_start, dive_end);
 
         // Check if there is another page of dives to load
-        const nextPage = !!dives[dive_end+1];
+        const next_page = !!dives[dive_end+1];
 
         if (dive_slice.length > 0) {
 
             // return a JSON array of the 20 dives
-            return new Response(JSON.stringify({dives:dive_slice, nextPage}), {status: 200, headers: { "Content-Type": "application/json" }});
+            return new Response(JSON.stringify({dives:dive_slice, next_page}), {status: 200, headers: { "Content-Type": "application/json" }});
         } else {
             // If there are no dives to return, return a 404
             return new Response("404 - Dives Not Found", { status: 404, headers: { "Content-Type": "text/html" } })
